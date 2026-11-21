@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<title>PCD Auto Dial</title>
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icon-192.png"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%23e11d2e'/%3E%3Cpath d='M30 24l10 2 4 14-6 5c4 8 9 13 17 17l5-6 14 4 2 10c-2 6-8 9-14 8C45 74 26 55 22 38c-1-6 2-12 8-14z' fill='white'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--red:#e11d2e;--red2:#ff4d5a;--bg:#0a0a0a;--w:#fff;--mut:rgba(255,255,255,.65)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--w);font-family:Poppins,system-ui,sans-serif;font-size:17px;font-weight:500}
+body{background:radial-gradient(circle at 15% 0%,rgba(225,29,46,.55),transparent 45%),radial-gradient(circle at 100% 70%,rgba(225,29,46,.3),transparent 40%),#0a0a0a;background-attachment:fixed;padding:env(safe-area-inset-top) 0 calc(96px + env(safe-area-inset-bottom))}
+.wrap{max-width:560px;margin:auto;padding:16px}
+.glass{background:rgba(255,255,255,.08);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.18);border-radius:24px;padding:18px;margin-bottom:14px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+h1{font-size:26px;font-weight:800;margin:0}h2{font-size:21px;font-weight:700;margin:0 0 10px}
+.mut{color:var(--mut);font-size:15px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.logo{display:flex;gap:10px;align-items:center}.logo i{width:44px;height:44px;border-radius:14px;background:var(--red);display:grid;place-items:center;font-style:normal;font-size:22px}
+button,input,textarea,select{font:inherit;color:var(--w)}
+input,textarea,select{width:100%;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.22);border-radius:16px;padding:14px;font-size:17px;margin:6px 0;outline:none}
+input:focus,textarea:focus{border-color:var(--red2)}
+textarea{min-height:130px}
+.btn{border:0;border-radius:16px;padding:15px 18px;font-weight:700;font-size:17px;background:linear-gradient(135deg,var(--red),#9b0f1c);cursor:pointer;width:100%;margin:5px 0}
+.btn.w{background:#fff;color:#111}.btn.g{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25)}.btn.wa{background:#fff;color:#c4121f}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.big{font-size:32px;font-weight:800;letter-spacing:.5px;margin:4px 0;word-break:break-all}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.chip{padding:11px 14px;border-radius:30px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.07);font-weight:600;font-size:15px}
+.chip.on{background:var(--red);border-color:var(--red2)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:rgba(0,0,0,.4);border-radius:18px;padding:14px;text-align:center}.stat b{display:block;font-size:30px;font-weight:800}
+.item{padding:10px 0;border-bottom:1px solid rgba(255,255,255,.12);font-size:15px}
+nav{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom));max-width:536px;margin:auto;display:flex;background:rgba(20,20,20,.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.18);border-radius:26px;padding:6px}
+nav button{flex:1;background:none;border:0;border-radius:20px;padding:10px 2px;font-size:12px;font-weight:600;color:var(--mut)}nav button b{display:block;font-size:21px}
+nav button.on{background:var(--red);color:#fff}
+.tip{border-left:4px solid var(--red2);padding-left:12px;margin:8px 0}
+.bar{height:8px;border-radius:8px;background:rgba(255,255,255,.15);overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:var(--red2)}
+</style></head><body><div class="wrap" id="app"></div>
+<script>
+const K='pcd_',$=id=>document.getElementById(id);
+const ST=['Answered','No Answer','Busy','Switched Off','Wrong No'],MISS=['No Answer','Busy','Switched Off'];
+const ADMIN='923406374318';
+const QR=['Kal visit karega','2 din mein visit','1 hafta mein visit','Kal call karna','3 din baad call','Interested','Not interested','Price pucha','Busy hai','WhatsApp par detail bhejo','Admission le liya','Number band'];
+const FD={'Kal visit karega':1,'2 din mein visit':2,'1 hafta mein visit':7,'Kal call karna':1,'3 din baad call':3};
+const RM=[['auto','🔔 Auto'],['60','1 ghanta baad'],['180','3 ghante baad'],['t1','Kal 10 baje'],['t2','2 din baad'],['t7','1 hafta baad'],['c','Apna time'],['n','Reminder nahi']];
+let users={},cur=null,D=null,tab='dial',mode='login',sel='Answered',ch='SIM',auto=false,per='today',fr='',to='',q='',timer=null,qs=[],remTxt='',rm='auto',cdt='';
+try{users=JSON.parse(localStorage.getItem(K+'u')||'{}');cur=localStorage.getItem(K+'c')}catch(e){}
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+function load(){try{D=JSON.parse(localStorage.getItem(K+'d_'+cur))}catch(e){D=null}D=D||{};D.c=D.c||[];D.l=D.l||[];D.r=D.r||[];D.i=D.i||0;D.goal=D.goal||100}
+function sync(){if(window.Android&&D){try{Android.setReminders(JSON.stringify(D.r.filter(x=>!x.d&&x.t>Date.now()).map(x=>({id:x.id,t:x.t,n:x.n,p:x.p,r:x.r}))))}catch(e){}}}
+function save(){try{localStorage.setItem(K+'d_'+cur,JSON.stringify(D))}catch(e){alert('Storage full')}sync()}
+function norm(n){let d=String(n).replace(/\D/g,'');if(d.startsWith('0092'))d=d.slice(4);else if(d.startsWith('92')&&d.length>=12)d=d.slice(2);if(d.startsWith('3'))d='0'+d;return d}
+function parse(t){const out=[];t.split(/\r?\n/).forEach(line=>{if(!line.trim())return;const p=line.split(/[,\t;|]/).map(s=>s.trim()).filter(Boolean);let num='',nm=[];p.forEach(s=>{if(!num&&s.replace(/\D/g,'').length>=9&&/^[+\d\s\-()]+$/.test(s))num=s;else nm.push(s)});if(!num){const m=line.match(/\+?\d[\d\s\-]{8,}\d/);if(m){num=m[0];nm=[line.replace(m[0],'').replace(/[,;|\t]/g,' ').trim()]}}if(num)out.push({n:nm.join(' ')||'Unknown',p:norm(num)})});return out}
+const fmt=t=>new Date(t).toLocaleDateString('en-GB');
+const tm=t=>new Date(t).toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+function endToday(){const e=new Date();e.setHours(23,59,59,999);return e.getTime()}
+function at(days,h){const d=new Date();d.setDate(d.getDate()+days);d.setHours(h||10,0,0,0);return d.getTime()}
+function inPer(l){const n=new Date(),d=new Date(l.t);if(per==='today')return d.toDateString()===n.toDateString();if(per==='month')return d.getMonth()===n.getMonth()&&d.getFullYear()===n.getFullYear();if(per==='range'){const a=fr?new Date(fr).setHours(0,0,0,0):0,b=to?new Date(to).setHours(23,59,59,999):9e15;return l.t>=a&&l.t<=b}return true}
+const perName=()=>({today:'Aaj '+fmt(Date.now()),month:'Is mahine',all:'Sab data',range:(fr||'...')+' to '+(to||'...')}[per]);
+function go(t){tab=t;render()}
+function render(){clearTimeout(timer);if(!cur||!users[cur])return authView();load();sync();const v={dial:dialView,list:listView,rem:remView,rep:repView,help:helpView}[tab]();const bd=D.r.filter(x=>!x.d&&x.t<=endToday()).length;
+$('app').innerHTML=`<div class="top"><div class="logo"><i>📞</i><div><h1>PCD Auto Dial</h1><div class="mut">ITSkills by PCD</div></div></div><button class="chip" onclick="logout()">${esc(cur)} ⎋</button></div>${v}<nav>${[['dial','📞','Dial'],['list','📋','List'],['rem','⏰','Remind'+(bd?' ('+bd+')':'')],['rep','📊','Report'],['help','💡','Help']].map(x=>`<button class="${tab===x[0]?'on':''}" onclick="go('${x[0]}')"><b>${x[1]}</b>${x[2]}</button>`).join('')}</nav>`}
+function authView(){$('app').innerHTML=`<div style="text-align:center;margin:40px 0 20px"><div class="logo" style="justify-content:center"><i style="width:70px;height:70px;font-size:36px;border-radius:22px">📞</i></div><h1 style="font-size:34px;margin-top:12px">PCD Auto Dial</h1><div class="mut">ITSkills by PCD</div></div><div class="glass"><h2>${mode==='login'?'Login':'New account'}</h2><input id="u" placeholder="Your name" autocomplete="username"><input id="p" type="password" placeholder="Password" autocomplete="current-password"><button class="btn" onclick="auth()">${mode==='login'?'Login':'Create account'}</button><button class="btn g" onclick="mode=mode==='login'?'signup':'login';authView()">${mode==='login'?'New user? Sign up':'Already have account? Login'}</button></div>`}
+function auth(){const u=$('u').value.trim(),p=$('p').value;if(!u||p.length<4)return alert('Name likho aur password kam az kam 4 characters ka rakho');if(mode==='signup'){if(users[u])return alert('Ye name pehle se hai');users[u]=btoa(p);try{localStorage.setItem(K+'u',JSON.stringify(users))}catch(e){}}else if(users[u]!==btoa(p))return alert('Name ya password galat hai');cur=u;try{localStorage.setItem(K+'c',u)}catch(e){}tab='dial';render()}
+function logout(){if(window.Android)Android.setReminders('[]');cur=null;try{localStorage.removeItem(K+'c')}catch(e){}authView()}
+function dialView(){const T=D.l.filter(l=>new Date(l.t).toDateString()===new Date().toDateString()),A=T.filter(l=>l.s==='Answered').length,pc=Math.min(100,T.length/D.goal*100);
+const head=`<div class="glass"><div class="row"><div><b>Aaj: ${T.length} / ${D.goal}</b><div class="mut">✅ ${A} answered</div></div><button class="chip" style="flex:0;white-space:nowrap" onclick="setGoal()">🎯 Target</button></div><div class="bar"><i style="width:${pc}%"></i></div></div>`;
+const c=D.c[D.i];if(!c)return head+`<div class="glass"><h2>Koi number nahi</h2><p class="mut">${D.c.length?'List khatam! Report bhej do.':'Pehle List tab mein numbers paste karo.'}</p><button class="btn" onclick="go('list')">Numbers add karo</button>${D.c.length?`<button class="btn g" onclick="D.i=0;save();render()">Dobara shuru karo</button>`:''}</div>`;
+const pr=D.r.find(x=>!x.d&&x.p===c.p),lg=[...D.l].reverse().find(l=>l.p===c.p);
+return head+`<div class="glass"><div class="mut">Number ${D.i+1} / ${D.c.length}</div><div class="bar"><i style="width:${D.i/D.c.length*100}%"></i></div><div class="big">${esc(c.n)}</div><div class="big" style="color:var(--red2)">${c.p}</div>${pr?`<div class="tip">⏰ ${esc(pr.r)} · ${tm(pr.t)}</div>`:''}${lg?`<div class="tip mut">Pichli baar (${fmt(lg.t)}): ${lg.s}${lg.r?' · '+esc(lg.r):''}</div>`:''}
+<div class="row"><button class="btn" onclick="callNow('SIM')">📞 SIM Call</button><button class="btn wa" onclick="callNow('WA')">💬 WhatsApp</button></div></div>
+<div class="glass"><h2>Result</h2><div class="chips">${ST.map(s=>`<span class="chip ${sel===s?'on':''}" onclick="sel='${s}';render()">${s}</span>`).join('')}</div>
+<div class="mut">Quick remarks (tap karo)</div><div class="chips">${QR.map((x,i)=>`<span class="chip ${qs.includes(x)?'on':''}" onclick="tq(${i})">${x}</span>`).join('')}</div>
+<input id="rem" value="${esc(remTxt)}" oninput="remTxt=this.value" placeholder="Ya khud likho...">
+<div class="mut">⏰ Reminder</div><select onchange="rm=this.value;render()">${RM.map(o=>`<option value="${o[0]}" ${rm===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>${rm==='c'?`<input type="datetime-local" value="${cdt}" onchange="cdt=this.value">`:''}
+<p class="mut">Auto: visit/call wale remark par date khud lagti hai, na uthane par 3 ghante baad reminder.</p>
+<button class="btn" onclick="next()">Save & Next ➜</button><div class="row"><button class="btn g" onclick="skip()">Skip</button><button class="btn g" onclick="auto=!auto;render()">Auto: ${auto?'ON ✅':'OFF'}</button></div></div>`}
+function setGoal(){const v=parseInt(prompt('Roz ka target (calls)',D.goal));if(v>0){D.goal=v;save();render()}}
+function tq(i){const x=QR[i];qs=qs.includes(x)?qs.filter(y=>y!==x):qs.concat(x);render()}
+function remTime(){const o=rm;if(o==='n')return 0;if(o==='c')return cdt?new Date(cdt).getTime():0;if(o==='60'||o==='180')return Date.now()+o*6e4;if(o==='t1')return at(1);if(o==='t2')return at(2);if(o==='t7')return at(7);const d=qs.map(x=>FD[x]).filter(Boolean);if(d.length)return at(Math.min(...d));if(MISS.includes(sel))return Date.now()+180*6e4;return 0}
+function callNow(c){ch=c;const x=D.c[D.i];if(!x)return;const u='https://wa.me/92'+x.p.slice(1);if(c==='SIM'){if(window.Android)Android.call(x.p);else location.href='tel:'+x.p}else{if(window.Android)Android.open(u);else window.open(u,'_blank')}}
+function next(){const x=D.c[D.i],t=remTime(),r=[...qs,remTxt.trim()].filter(Boolean).join(', ');D.l.push({t:Date.now(),n:x.n,p:x.p,s:sel,r,c:ch});D.r.forEach(z=>{if(z.p===x.p)z.d=1});if(t)D.r.push({id:Math.floor(Math.random()*2e9)+1,t,n:x.n,p:x.p,r:r||sel,d:0});D.i++;sel='Answered';qs=[];remTxt='';rm='auto';cdt='';save();render();if(auto&&D.c[D.i])timer=setTimeout(()=>callNow(ch),1500)}
+function skip(){D.i++;save();render()}
+function listView(){return `<div class="glass"><h2>Numbers add karo</h2><p class="mut">Name aur number paste karo (har line mein ek). 3021234567 ke agay 0 khud lag jayega.</p><textarea id="ta" placeholder="Ali 3021234567&#10;Sara, 0300-1234567&#10;+92 341 1234567"></textarea><button class="btn" onclick="addList()">➕ List add karo</button><button class="btn g" onclick="$('fi').click()">📁 File import (txt / csv)</button><input id="fi" type="file" accept=".txt,.csv,.tsv" hidden onchange="imp(this)"></div>
+<div class="glass"><h2>Meri list (${D.c.length})</h2>${D.c.slice(0,40).map(x=>`<div class="item"><b>${esc(x.n)}</b><br><span class="mut">${x.p}</span></div>`).join('')||'<p class="mut">Khali hai</p>'}${D.c.length>40?`<p class="mut">...aur ${D.c.length-40}</p>`:''}${D.c.length?`<button class="btn g" onclick="if(confirm('List saaf karein?')){D.c=[];D.i=0;save();render()}">🗑 List saaf karo</button>`:''}</div>`}
+function addList(){const r=parse($('ta').value);if(!r.length)return alert('Koi sahi number nahi mila');D.c=D.c.concat(r);save();alert(r.length+' numbers add ho gaye');go('dial')}
+function imp(el){const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$('ta').value=r.result;addList()};r.readAsText(f)}
+function remItem(x){const i=D.r.indexOf(x);return `<div class="item"><b>${esc(x.n)}</b> · ${x.p}<br><span class="mut">${tm(x.t)} · ${esc(x.r)}</span><div class="row"><button class="btn" onclick="rgo(${i},'SIM')">📞 Call</button><button class="btn wa" onclick="rgo(${i},'WA')">💬 WhatsApp</button></div><div class="row"><button class="btn g" onclick="D.r[${i}].d=1;save();render()">✔ Done</button><button class="btn g" onclick="D.r[${i}].t=at(1);save();render()">⏭ Kal</button></div></div>`}
+function rgo(i,c){const x=D.r[i];D.c.splice(D.i,0,{n:x.n,p:x.p});save();tab='dial';render();callNow(c)}
+function remView(){const L=D.r.filter(x=>!x.d).sort((a,b)=>a.t-b.t),n=Date.now(),e=endToday(),sec=(h,a)=>`<div class="glass"><h2>${h} (${a.length})</h2>${a.map(remItem).join('')||'<p class="mut">Koi nahi</p>'}</div>`;
+return sec('🔴 Late (guzar chuke)',L.filter(x=>x.t<n))+sec('🟡 Aaj ke',L.filter(x=>x.t>=n&&x.t<=e))+sec('🟢 Aane wale',L.filter(x=>x.t>e))+`<p class="mut" style="text-align:center">Complete: ${D.r.filter(x=>x.d).length}</p>`}
+const cnt=(L,s)=>L.filter(l=>l.s===s).length,intr=L=>L.filter(l=>/Interested/.test(l.r)).length;
+function repView(){const L=D.l.filter(inPer),H=L.filter(l=>!q||(l.n+l.p+l.r).toLowerCase().includes(q.toLowerCase()));
+return `<div class="glass"><h2>Report</h2><select onchange="per=this.value;render()">${[['today','Aaj ki'],['month','Is mahine ki'],['all','Sab data'],['range','Date range']].map(o=>`<option value="${o[0]}" ${per===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>${per==='range'?`<div class="row"><input type="date" value="${fr}" onchange="fr=this.value;render()"><input type="date" value="${to}" onchange="to=this.value;render()"></div>`:''}
+<div class="stats"><div class="stat"><b>${L.length}</b>Total calls</div><div class="stat"><b>${cnt(L,'Answered')}</b>Answered</div><div class="stat"><b>${cnt(L,'No Answer')}</b>No answer</div><div class="stat"><b>${cnt(L,'Busy')+cnt(L,'Switched Off')+cnt(L,'Wrong No')}</b>Other</div><div class="stat"><b>${intr(L)}</b>Interested</div><div class="stat"><b>${D.r.filter(x=>!x.d).length}</b>Reminders</div></div>
+<button class="btn wa" style="margin-top:14px" onclick="sendRep()">📤 Admin ko WhatsApp report</button><button class="btn" onclick="pdf()">📄 PDF report</button><div class="row"><button class="btn g" onclick="csv()">⬇ CSV</button><button class="btn g" onclick="retry()">🔁 Unanswered dobara</button></div></div>
+<div class="glass"><h2>Call history (${H.length})</h2><input placeholder="🔍 Naam / number / remark search" value="${esc(q)}" onchange="q=this.value;render()">${H.slice().reverse().slice(0,60).map(l=>`<div class="item"><b>${esc(l.n)}</b> · ${l.p}<br><span class="mut">${fmt(l.t)} · ${l.s} · ${l.c}${l.r?' · '+esc(l.r):''}</span></div>`).join('')||'<p class="mut">Abhi koi call nahi</p>'}</div>
+<div class="glass"><h2>Backup</h2><p class="mut">Data sirf is phone mein hai. Backup bana kar WhatsApp/Drive par save kar lo.</p><div class="row"><button class="btn g" onclick="backup()">💾 Backup</button><button class="btn g" onclick="$('bf').click()">♻ Restore</button></div><input id="bf" type="file" accept=".json,.txt" hidden onchange="restore(this)"></div>`}
+function sendRep(){const L=D.l.filter(inPer);const t=`*PCD Auto Dial Report*\nUser: ${cur}\nPeriod: ${perName()}\nTotal Calls: ${L.length}\nAnswered: ${cnt(L,'Answered')}\nNo Answer: ${cnt(L,'No Answer')}\nBusy: ${cnt(L,'Busy')}\nSwitched Off: ${cnt(L,'Switched Off')}\nWrong No: ${cnt(L,'Wrong No')}\nInterested: ${intr(L)}\nPending Reminders: ${D.r.filter(x=>!x.d).length}\n\n*Remarks*\n`+(L.filter(l=>l.r).slice(0,40).map((l,i)=>`${i+1}. ${l.n} ${l.p} - ${l.s} - ${l.r}`).join('\n')||'-');const u='https://wa.me/'+ADMIN+'?text='+encodeURIComponent(t);if(window.Android)Android.open(u);else window.open(u,'_blank')}
+function pdf(){const L=D.l.filter(inPer);const h=`<html><head><meta charset="utf-8"><style>body{font-family:sans-serif;padding:14px}h1{color:#e11d2e}table{width:100%;border-collapse:collapse;font-size:12px}td,th{border:1px solid #999;padding:5px;text-align:left}th{background:#e11d2e;color:#fff}</style></head><body><h1>PCD Auto Dial Report</h1><p><b>User:</b> ${esc(cur)} &nbsp; <b>Period:</b> ${perName()}<br>Total ${L.length} | Answered ${cnt(L,'Answered')} | No Answer ${cnt(L,'No Answer')} | Busy ${cnt(L,'Busy')} | Off ${cnt(L,'Switched Off')} | Wrong ${cnt(L,'Wrong No')} | Interested ${intr(L)}</p><table><tr><th>#</th><th>Date</th><th>Name</th><th>Number</th><th>Status</th><th>Remarks</th></tr>${L.map((l,i)=>`<tr><td>${i+1}</td><td>${fmt(l.t)}</td><td>${esc(l.n)}</td><td>${l.p}</td><td>${l.s}</td><td>${esc(l.r)}</td></tr>`).join('')}</table></body></html>`;if(window.Android)Android.printHtml(h);else{const w=window.open('','_blank');w.document.write(h);w.document.close();w.print()}}
+function csv(){const rows=[['Date','Name','Number','Status','Channel','Remarks']].concat(D.l.filter(inPer).map(l=>[fmt(l.t),l.n,l.p,l.s,l.c,l.r]));const txt=rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n');if(window.Android){Android.share(txt);return}const b=new Blob([txt],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='pcd-calls-'+cur+'.csv';a.click()}
+function retry(){const ans=new Set(D.l.filter(l=>l.s==='Answered').map(l=>l.p)),seen={},r=[];D.l.filter(inPer).filter(l=>MISS.includes(l.s)).forEach(l=>{if(!seen[l.p]&&!ans.has(l.p)){seen[l.p]=1;r.push({n:l.n,p:l.p})}});if(!r.length)return alert('Koi unanswered number nahi');if(!confirm(r.length+' numbers dobara dial karein?'))return;D.c=r;D.i=0;save();go('dial')}
+function backup(){const t=JSON.stringify(D);if(window.Android)Android.share(t);else{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'application/json'}));a.download='pcd-backup-'+cur+'.json';a.click()}}
+function restore(el){const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(!o.l)throw 0;D=o;D.r=D.r||[];D.c=D.c||[];save();render()}catch(e){alert('Backup file sahi nahi')}};r.readAsText(f)}
+function helpView(){return `<div class="glass"><h2>Kaise use karein</h2><div class="tip"><b>1. List</b><br>Numbers paste ya import karo. Zero khud lag jayega.</div><div class="tip"><b>2. Dial</b><br>SIM Call ya WhatsApp dabao. Call ke baad result aur quick remark chuno.</div><div class="tip"><b>3. Reminder</b><br>"Kal visit karega" jaise remark par reminder khud lagta hai. Na uthane par 3 ghante baad. Apna time bhi chun sakte ho. Time par notification aati hai.</div><div class="tip"><b>4. Remind tab</b><br>Late, Aaj aur Aane wale reminders ki list. Wahan se call, WhatsApp, Done ya Kal kar sakte ho.</div><div class="tip"><b>5. Report</b><br>Aaj, mahine ya date range ki report. PDF, CSV ya admin ko WhatsApp.</div><div class="tip"><b>6. Backup</b><br>Report tab mein Backup zaroor lo.</div><div class="tip"><b>Notification na aaye?</b><br>Phone Settings → Apps → PCD Auto Dial → Notifications ON, Battery → Unrestricted, aur Autostart ON karo.</div></div>`}
+render();
+</script></body></html>
